@@ -70,13 +70,12 @@ jobs:
           port: ${{ secrets.DEPLOY_PORT }}
           script: |
             # Подготовка директории
-            mkdir -p /opt/actions-runner/eva_bot
-            cd /opt/actions-runner/eva_bot
+            mkdir -p /opt/actions-runner/date_bot
+            cd /opt/actions-runner/date_bot
 
             # Обновление .env
             cat > .env << 'EOF'
             BOT_TOKEN=${{ secrets.BOT_TOKEN }}
-            ADMIN_IDS=358932916
             EOF
 
             # Создание/обновление docker-compose.yml
