@@ -74,8 +74,8 @@ jobs:
             cd /opt/actions-runner/date_bot
 
             # Обновление .env
-            cat > .env << EOF
-            BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+            cat > .env << 'EOF'
+            TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
             EOF
 
             # Создание/обновление docker-compose.yml
