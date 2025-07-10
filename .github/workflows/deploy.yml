@@ -74,7 +74,7 @@ jobs:
             cd /opt/actions-runner/date_bot
 
             # Обновление .env
-            cat > .env << 'EOF'
+            cat > .env << EOF
             BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
             EOF
 
