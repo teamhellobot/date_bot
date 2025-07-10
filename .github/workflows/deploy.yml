@@ -75,7 +75,7 @@ jobs:
 
             # Обновление .env
             cat > .env << 'EOF'
-            BOT_TOKEN=${{ secrets.BOT_TOKEN }}
+            BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
             EOF
 
             # Создание/обновление docker-compose.yml
