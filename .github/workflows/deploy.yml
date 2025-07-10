@@ -1,0 +1,112 @@
+name: Build & Deploy Telegram Bot
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tag: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+            
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+      - name: Deploy to production server
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          script: |
+            # Подготовка директории
+            mkdir -p /opt/actions-runner/eva_bot
+            cd /opt/actions-runner/eva_bot
+
+            # Обновление .env
+            cat > .env << 'EOF'
+            BOT_TOKEN=${{ secrets.BOT_TOKEN }}
+            ADMIN_IDS=358932916
+            EOF
+
+            # Создание/обновление docker-compose.yml
+            cat > docker-compose.yml << 'EOF'
+            version: '3.8'
+            volumes:
+              bot_data:
+            services:
+              bot:
+                image: ghcr.io/${{ github.repository }}:latest
+                container_name: date_bot_container
+                restart: unless-stopped
+                volumes:
+                  - bot_data:/app/database/data
+                env_file:
+                  - .env
+                environment:
+                  - PYTHONUNBUFFERED=1
+                  - TZ=MSK+
+                command: python main.py
+            EOF
+
+            # Docker login
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+            # Перезапуск контейнера
+            docker compose down || true
+            docker compose pull
+            docker compose up -d
+
+            docker compose ps
+            docker compose logs --tail=50 bot || true
+            docker logout ghcr.io
