@@ -6,6 +6,7 @@ from aiogram.types import (
     KeyboardButton,
     InlineKeyboardMarkup,
     InlineKeyboardButton,
+    FSInputFile
 )
 from loguru import logger
 from dotenv import load_dotenv
@@ -36,7 +37,7 @@ def get_manager_keyboard():
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="Пиши нашему менеджеру — @hellobotstudio 👩‍💻",
+                    text="Связаться с менеджером",
                     url="https://t.me/hellobotstudio    ",
                 )
             ]
@@ -73,16 +74,17 @@ async def send_ofer(message: types.Message):
     else:
         logger.info(f"Existing user interacted: {user.user_id}")
 
-    welcome_text = (
-        "🚀 <b>P.S.</b> Мы создаём Telegram-ботов любой сложности:\n"
-        "• От лид-магнитов до сложных систем автоматизации\n"
-        "• Индивидуальный подход\n"
-        "• Профессиональная реализация\n\n"
-        "Хочешь такого же крутого бота?"
+    text = (
+        "Всем привет! На связи студия цифровой разработки — <a href='https://t.me/hellobotstudio'>hello.bot.studio 🔗</a>\n\n"
+        "Создаём ботов, WebApp и digital-инструменты, которые решают <b>бизнес-задачи</b>.\n\n"
+        "<a href='https://botbotbto.my.canva.site/'>Предлагаем готовые или кастомные решения</a> для продаж, автоматизации и роста 💪🏻\n\n"
+        "Уже есть идеи или хотите подумать вместе? <b>Нажимайте на кнопку ниже</b> и пишите нашему менеджеру — "
+        "с радостью обсудим ваш проект 🤖"
     )
+    photo_path = "picture/logo.jpeg"
 
-    await message.reply(
-        welcome_text, reply_markup=get_manager_keyboard(), parse_mode="HTML"
+    await message.answer_photo(
+        photo=FSInputFile(photo_path), caption=text, reply_markup=get_manager_keyboard(), parse_mode="HTML"
     )
     logger.info(f"Bot order information sent to user: {user.user_id}")
 
@@ -145,7 +147,7 @@ async def send_idea(message: types.Message):
             await message.reply("Идеи закончились 😢", reply_markup=idea_keyboard)
             return
 
-        response = f"✨ Идея для свидания ✨\n\n{idea.text}\n\nХорошего время препровождения! ❤️"
+        response = f"✨ Идея для свидания ✨\n\n{idea.text}\n\nХорошего времяпрепровождения! ❤️"
 
         if idea.image_path and os.path.exists(idea.image_path):
             logger.info(f"Sending idea with image: {idea.text}")
